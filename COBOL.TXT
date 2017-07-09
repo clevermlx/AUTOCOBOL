@@ -1,0 +1,362 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID.   DBDAY001.
+      *****************************************************************
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+            SELECT OPTIONAL BATCHNO ASSIGN TO S-BATCHNO
+                   FILE STATUS IS FILE-STATUS.
+            SELECT OPTIONAL AFPCDDM ASSIGN TO S-AFPCDDM
+                   FILE STATUS IS FILE-STATUS.
+            SELECT OPTIONAL AFPCDDC ASSIGN TO S-AFPCDDC
+                   FILE STATUS IS FILE-STATUS.
+       *--------------------------------------------------------------*
+       DATA  DIVISION.
+       FILE  SECTION.
+       FD  BATCHNO.
+       01  BATCHNO-RES.
+           02  BATCHNO-BATCHNO    PIC X(80).
+       FD AFPCDDM.
+           COPY ACPCDDM.
+       FD AFPCDDC.
+           COPY ACPCDDC.
+       *--------------------------------------------------------------*
+       WORKING-STORAGE SECTION.
+       77 DEBUG-VAR       PIC X(50) VALUE
+             '<#NOVA+ V1.8.2#FF V1.0.0#F-ABDB V1.21.00.3#>.'
+       77 DUBUG-PRG-VER   PIC X(50) VALUE
+             '<#MAOLX#100608#Y#0000#>'.
+      *****************************************************************
+      *       DB2 SQL TABLE'S COPYBOOK                                *
+      *****************************************************************
+           EXEC SQL INCLUDE ATHPCDDC END-EXEC.
+           EXEC SQL INCLUDE ATHPCTDM END-EXEC.
+           EXEC SQL INCLUDE ATHPCTDC END-EXEC.
+           EXEC SQL INCLUDE ATHMOSUB END-EXEC.
+           EXEC SQL INCLUDE ATHPCDDM END-EXEC.
+      *****************************************************************
+      *    INCLUDE PUBLIC VARIABLE :                                  *
+      *       1.  PROGRAM-NAME                                        *
+      *       2.  MIN-ACCNO                                           *
+      *       3.  MAX-ACCNO                                           *
+      *       4.  NOT-FOUND       ( VALUE +100 )                      *
+      *       5.  WARNING-COUNT   ( VALUE  0  )                       *
+      *       6.  COMMIT-COUNT    ( VALUE SPACES )                    *
+      *       7.  M-ACTION        ( VALUE SPACES )                    *
+      *       8.  M-ACTION-KEY    ( VALUE SPACES )                    *
+      *****************************************************************
+              EXEC SQL INCLUDE PUBVARCB END-EXEC.
+              EXEC SQL INCLUDE PROVARCB END-EXEC.
+      *****************************************************************
+      *       PRIVATE VARIBLES                                        *
+      *****************************************************************
+       77 END-OF-ATHPCDDC            PIC X(01) VALUE 'F'.
+       77 FETCH-ATHPCDDC-COUNT       PIC 9(17) VALUE 0.
+       77 SELECT-ATHPCTDM-COUNT      PIC 9(17) VALUE 0.
+       77 INSERT-ATHPCTDC-COUNT      PIC 9(17) VALUE 0.
+       77 END-OF-ATHMOSUB            PIC X(01) VALUE 'F'.
+       77 FETCH-ATHMOSUB-COUNT       PIC 9(17) VALUE 0.
+       77 SELECT-ATHPCDDM-COUNT      PIC 9(17) VALUE 0.
+       77 END-OF-AFPCDDM             PIC X(01) VALUE 'F'.
+       77 READ-AFPCDDM-COUNT         PIC 9(17) VALUE 0.
+       77 WRITE-AFPCDDM-COUNT        PIC 9(17) VALUE 0.
+       77 END-OF-AFPCDDC             PIC X(01) VALUE 'F'.
+       77 READ-AFPCDDC-COUNT         PIC 9(17) VALUE 0.
+       77 WRITE-AFPCDDC-COUNT        PIC 9(17) VALUE 0.
+      *****************************************************************
+      *       DECLARE CURSOR                                          *
+      *****************************************************************
+           EXEC SQL DECLARE CSR-ATHPCDDC CURSOR WITH HOLD FOR
+                    SELECT
+                           DAPCODE          ,
+                           PROTSENO          ,
+                           SUBSERNO
+                      FROM ATHPCDDC
+                     WHERE 
+           END-EXEC
+           EXEC SQL DECLARE CSR-ATHMOSUB CURSOR WITH HOLD FOR
+                    SELECT
+                           DAPCODE          ,
+                           PROTSENO          ,
+                           SUBSERNO
+                      FROM ATHMOSUB
+                     WHERE 
+           END-EXEC
+      *---------------------------------------------------------------*
+      *       PROCEDURE DIVISION                                      *
+      *---------------------------------------------------------------*
+       PROCEDURE DIVISION.
+       000-MAIN-BEGIN.
+           MOVE 'DBDAY001'    TO PROGRAM-NAME
+           MOVE 'T'           TO PABPC-OPERFLAG-USE
+           MOVE 'F'           TO PABPC-OPERFLAG-REPEAT
+           MOVE 3             TO ATHPABPC-PREBTHF
+           MOVE 'T'           TO 910-AUTO-RERUN-FLAG
+           PERFORM PRE-PROCESS
+           PERFORM INITIALIZE-WORKING-STORAGE
+           MOVE ATHPABPC-PROCACTN TO RESTART-PROCACTN
+           DISPLAY ' ATHPABPC-WORKDATE = ' ATHPABPC-WORKDATE 
+           DISPLAY ' ATHPASCT-WORKDATE = ' ATHPASCT-WORKDATE 
+
+
+
+           MOVE 3             TO ATHPABPC-PROCSTAT
+           MOVE SPACES        TO ATHPABPC-PROCACTN
+           MOVE SPACES        TO ATHPABPC-PROCPOS
+           MOVE SPACES        TO ATHPABPC-PROCPOS1
+           PERFORM END-PROCESS
+           CONTINUE.
+      *---------------------------------------------------------------*
+      *       THE END OF MAIN                                         *
+      *---------------------------------------------------------------*
+       000-MAIN-END.
+           CLOSE AFPCDDM
+           CLOSE AFPCDDC
+
+
+           DISPLAY ' FETCH-ATHPCDDC-COUNT = ' FETCH-ATHPCDDC-COUNT
+           DISPLAY ' SELECT-ATHPCTDM-COUNT = ' SELECT-ATHPCTDM-COUNT
+           DISPLAY ' INSERT-ATHPCTDC-COUNT = ' INSERT-ATHPCTDC-COUNT
+           DISPLAY ' FETCH-ATHMOSUB-COUNT = ' FETCH-ATHMOSUB-COUNT
+           DISPLAY ' SELECT-ATHPCDDM-COUNT = ' SELECT-ATHPCDDM-COUNT
+           DISPLAY ' READ-AFPCDDM-COUNT = ' READ-AFPCDDM-COUNT
+           DISPLAY ' WRITE-AFPCDDM-COUNT = ' WRITE-AFPCDDM-COUNT
+           DISPLAY ' READ-AFPCDDC-COUNT = ' READ-AFPCDDC-COUNT
+           DISPLAY ' WRITE-AFPCDDC-COUNT = ' WRITE-AFPCDDC-COUNT
+           IF WARNING-COUNT > 0
+              DISPLAY ' WARNING-COUNT = ' WARNING-COUNT
+              IF RETURN-COUND = 0
+                 MOVE 1 TO RETURN-CODE
+              END-IF
+           END-IF
+           STOP RUN.
+      *---------------------------------------------------------------*
+       INITIALIZ-WORKING-STORAGE.
+           MOVE 'F'               TO END-OF-ATHPCDDC
+           MOVE 0                 TO FETCH-ATHPCDDC-COUNT
+           MOVE 0                 TO SELECT-ATHPCTDM-COUNT
+           MOVE 0                 TO INSERT-ATHPCTDC-COUNT
+           MOVE 'F'               TO END-OF-ATHMOSUB
+           MOVE 0                 TO FETCH-ATHMOSUB-COUNT
+           MOVE 0                 TO SELECT-ATHPCDDM-COUNT
+           MOVE 'F'               TO END-OF-AFPCDDM
+           MOVE 0                 TO READ-AFPCDDM-COUNT
+           MOVE 0                 TO WRITE-AFPCDDM-COUNT
+           MOVE 'F'               TO END-OF-AFPCDDC
+           MOVE 0                 TO READ-AFPCDDC-COUNT
+           MOVE 0                 TO WRITE-AFPCDDC-COUNT
+           CLOSE AFPCDDM
+           CLOSE AFPCDDC
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-FETCH-ATHPCDDC-PROCESS.
+           EXEC SQL FETCH CSR-ATHPCDDC
+                     INTO
+                           :ATHPCDDC-DAPCODE          ,
+                           :ATHPCDDC-PROTSENO          ,
+                           :ATHPCDDC-SUBSERNO
+           END-EXEC
+           IF SQLCODE = 0
+              ADD 1                TO FETCH-ATHPCDDC-COUNT
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY 'FETCH ATHPCDDC NOT FOUND '
+
+              ELSE
+                 DISPLAY 'FETCH ATHPCDDC ERROR'
+                 MOVE 'FETCH ATHPCDDC'          TO M-ACTION
+                 MOVE SPACES                     TO M-ACTION
+              END-IF
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-FETCH-ATHMOSUB-PROCESS.
+           EXEC SQL FETCH CSR-ATHMOSUB
+                     INTO
+                           :ATHMOSUB-DAPCODE          ,
+                           :ATHMOSUB-PROTSENO          ,
+                           :ATHMOSUB-SUBSERNO
+           END-EXEC
+           IF SQLCODE = 0
+              ADD 1                TO FETCH-ATHMOSUB-COUNT
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY 'FETCH ATHMOSUB NOT FOUND '
+
+              ELSE
+                 DISPLAY 'FETCH ATHMOSUB ERROR'
+                 MOVE 'FETCH ATHMOSUB'          TO M-ACTION
+                 MOVE SPACES                     TO M-ACTION
+              END-IF
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-SELECT-ATHPCTDM-PROCESS.
+           EXEC SQL SELECT 
+                           DAPCODE                   ,
+                           PROTSENO                  ,
+                           SUBSERNO                  ,
+                           CURRTYPE
+                      INTO
+                           :ATHPCTDM-DAPCODE          ,
+                           :ATHPCTDM-PROTSENO          ,
+                           :ATHPCTDM-SUBSERNO          ,
+                           :ATHPCTDM-CURRTYPE          
+                      FROM ATHPCTDM
+                     WHERE
+           END-EXEC
+           IF SQLCODE = 0
+              ADD 1                TO SELECT-ATHPCTDM-COUNT
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY 'SELECT ATHPCTDM NOT FOUND '
+
+              ELSE
+                 DISPLAY 'SELECT ATHPCTDM ERROR'
+                 MOVE 'SELECT ATHPCTDM'          TO M-ACTION
+                 MOVE SPACES                     TO M-ACTION
+              END-IF
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-SELECT-ATHPCDDM-PROCESS.
+           EXEC SQL SELECT 
+                           DAPCODE                   ,
+                           PROTSENO                  ,
+                           SUBSERNO
+                      INTO
+                           :ATHPCDDM-DAPCODE          ,
+                           :ATHPCDDM-PROTSENO          ,
+                           :ATHPCDDM-SUBSERNO          
+                      FROM ATHPCDDM
+                     WHERE
+           END-EXEC
+           IF SQLCODE = 0
+              ADD 1                TO SELECT-ATHPCDDM-COUNT
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY 'SELECT ATHPCDDM NOT FOUND '
+
+              ELSE
+                 DISPLAY 'SELECT ATHPCDDM ERROR'
+                 MOVE 'SELECT ATHPCDDM'          TO M-ACTION
+                 MOVE SPACES                     TO M-ACTION
+              END-IF
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-INSERT-ATHPCTDC-PROCESS.
+           EXEC SQL INSERT INTO ATHPCTDC ( 
+                           DAPCODE                   ,
+                           PROTSENO                  ,
+                           SUBSERNO                  ,
+                           CURRTYPE
+                      VALUES (
+                           :ATHPCTDC-DAPCODE          ,
+                           :ATHPCTDC-PROTSENO          ,
+                           :ATHPCTDC-SUBSERNO          ,
+                           :ATHPCTDC-CURRTYPE           )
+           END-EXEC
+           IF SQLCODE = 0
+              ADD 1                TO INSERT-ATHPCTDC-COUNT
+           ELSE
+              IF SQLCODE = 100
+                 DISPLAY 'INSERT ATHPCTDC NOT FOUND '
+
+              ELSE
+                 DISPLAY 'INSERT ATHPCTDC ERROR'
+                 MOVE 'INSERT ATHPCTDC'          TO M-ACTION
+                 MOVE SPACES                     TO M-ACTION
+              END-IF
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-READ-AFPCDDM-PROCESS.
+           MOVE 'READ AFPCDDM'             TO M-ACTION
+           READ AFPCDDM NEXT RECORD
+           AT END
+              MOVE 'T'                TO END-OF-AFPCDDM
+
+           NOT AT END
+
+              PERFORM FIEL-ERRCHK
+              ADD 1              TO READ-AFPCDDM-COUNT
+           END-READ
+           CONTINUE.
+      *---------------------------------------------------------------*
+       MLX-WRITE-AFPCDDC-PROCESS.
+           MOVE      TO AFPCDDC-ZONENO
+           MOVE      TO AFPCDDC-PROTSENO
+           MOVE      TO AFPCDDC-SUBSERNO
+           WRITE AFPCDDC-REC
+           PERFORM FILE-ERRCHK
+           ADD 1              TO WRITE-AFPCDDC-COUNT
+           CONTINUE.
+      *---------------------------------------------------------------*
+       OPEN-CURSOR-ATHPCDDC.
+           MOVE 'OPEN CSR-ATHPCDDC'         TO M-ACTION
+           MOVE SPACES TO M-ACTION-KEY
+           EXEC SQL OPEN CSR-ATHPCDDC END-EXEC
+           IF SQLCODE NOT = 0
+              DISPLAY ' FAILD TO OPEN CSR-ATHPCDDC'
+              PERFORM SQL-ERRCHK
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       OPEN-CURSOR-ATHMOSUB.
+           MOVE 'OPEN CSR-ATHMOSUB'         TO M-ACTION
+           MOVE SPACES TO M-ACTION-KEY
+           EXEC SQL OPEN CSR-ATHMOSUB END-EXEC
+           IF SQLCODE NOT = 0
+              DISPLAY ' FAILD TO OPEN CSR-ATHMOSUB'
+              PERFORM SQL-ERRCHK
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       CLOSE-CURSOR-ATHPCDDC.
+           MOVE 'CLOSE CSR-ATHPCDDC'         TO M-ACTION
+           MOVE SPACES TO M-ACTION-KEY
+           EXEC SQL CLOSE CSR-ATHPCDDC END-EXEC
+           IF SQLCODE NOT = 0
+              DISPLAY ' FAILD TO CLOSE CURSOR ATHPCDDC'
+              PERFORM SQL-ERRCHK
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       CLOSE-CURSOR-ATHMOSUB.
+           MOVE 'CLOSE CSR-ATHMOSUB'         TO M-ACTION
+           MOVE SPACES TO M-ACTION-KEY
+           EXEC SQL CLOSE CSR-ATHMOSUB END-EXEC
+           IF SQLCODE NOT = 0
+              DISPLAY ' FAILD TO CLOSE CURSOR ATHMOSUB'
+              PERFORM SQL-ERRCHK
+           END-IF
+           CONTINUE.
+      *---------------------------------------------------------------*
+       OPEN-FILE-PROCESS.
+           MOVE 'OPEN AFPCDDM ERROR'           TO M-ACTION
+           MOVE SPACES               TO M-ACTION-KEY
+           OPEN INPUT AFPCDDM
+           PERFORM FILE-ERRCHK
+
+           MOVE 'OPEN AFPCDDC ERROR'           TO M-ACTION
+           MOVE SPACES               TO M-ACTION-KEY
+           OPEN OUTPUT AFPCDDC
+           PERFORM FILE-ERRCHK
+
+           CONTINUE.
+      *---------------------------------------------------------------*
+      *    INLUDE PUBLIC MODULE  :                                    *
+      *      1.  PRO-PROCESS                                          *
+      *      2.  END-PROCESS                                          *
+      *      3.  ABEND-PROCESS                                        *
+      *      4.  COMMIT-PROCESS                                       *
+      *      5.  SIMPLE-COMMIT-PROCESS                                *
+      *      6.  PROCSTAT-COMMIT-PROCESS                              *
+      *      7.  SQL-ERRCHK                                           *
+      *      8.  FILE-ERRCHK                                          *
+      *      9.  ERROR-PRINT                                          *
+      *---------------------------------------------------------------*
+           EXEC SQL INCLUDE PUBMODUL END-EXEC.
+           EXEC SQL INCLUDE PROMODUL END-EXEC.

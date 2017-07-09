@@ -1,0 +1,10 @@
+       *SDIUFOADAF*
+       *
+       *
+       *
+       ************************
+           EXEC SQL DEC
+           ( DAPCODE        DECIMAL (7,0) NOT NULL,
+             PROTSENO       CHAR(34) NOT NULL,
+             SUBSERNO       DECIMAL (7,0) NOT NULL)
+           END-EXEC

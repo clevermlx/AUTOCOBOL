@@ -1,0 +1,9 @@
+       *-------------------------
+       *
+       *
+       *------------------------
+        01 AFPCDDC-REC.
+           10 AFPCDDC-ZONENO     PIC 9(05).
+ABC        10 AFPCDDC-PROTSENO   PIC X(34).
+           10 AFPCDDC-SUBSERNO   PIC 9(05).
+       *   10 AFPCDDC-NOTE       PIC X(250).
